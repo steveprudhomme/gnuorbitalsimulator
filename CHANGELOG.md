@@ -1,84 +1,67 @@
 # Changelog — GNU Orbital Simulator
 
-Tous les changements notables apportés à ce projet seront documentés dans ce fichier.
+Tous les changements notables de **GNU Orbital Simulator** sont documentés dans ce fichier.
 
-Le format est inspiré de **Keep a Changelog**  
-et le projet suit une **version sémantique simplifiée** (`MAJOR.MINOR.PATCH`).
+Le format suit l’esprit de **Keep a Changelog**  
+et la numérotation respecte le **Semantic Versioning (MAJOR.MINOR.PATCH)**.
 
 ---
 
-## [0.0.2] — 2025-12-30
+## [0.0.3] — 2025-12-30
 
-### ✨ Améliorations
+### Modifié
 
-#### 🧭 Grille et numérotation géographique
-- Ajout d’une **option d’interface (case à cocher)** permettant :
-  - d’**activer ou désactiver** l’affichage des numéros de méridiens et parallèles
-- Paramétrisation de la **taille des caractères** des labels :
-  - contrôle via les constantes `LABEL_FONT_SIZE` et `LABEL_SCALE`
-- Amélioration de la lisibilité générale des labels sur le globe
+#### 🧩 Architecture interne
+- Refactor majeur de l’architecture interne sans modification du comportement utilisateur
+- Réduction significative de la taille de `main.js`, désormais limité à un rôle d’orchestrateur
+- Découpage du code en modules spécialisés :
+  - `core/scene.js` : scène, caméra, renderer, contrôles et gestion du resize
+  - `core/time.js` : gestion du temps, dates et synchronisation UI
+  - `earth/earth.js` : Terre, texture, rotation GMST, grille et labels
+  - `earth/gridLabels.js` : grille latitude/longitude et numérotation
+  - `moon/moon.js` : Lune (logique existante, inchangée)
+  - `ui/ui.js` : interface utilisateur principale
+  - `ui/player.js` : lecteur de mission (playback, chapitres)
+  - `missions/vostok1.js` : données structurées de la mission
+  - `missions/vostokRuntime.js` : rendu, trajectoire et logique de mission
 
-#### 🎛️ Interface utilisateur
-- Interface rendue plus flexible pour un usage :
-  - pédagogique (labels visibles)
-  - immersif / esthétique (labels masqués)
-- Aucune régression fonctionnelle sur les modes existants
+#### 🧰 Maintenabilité
+- Séparation claire des responsabilités entre modules
+- Code rendu plus lisible et extensible
+- Préparation explicite à l’intégration future :
+  - du Soleil et de l’éclairage dynamique
+  - de missions multiples via fichiers dédiés
 
-#### 🧰 Technique
-- Regroupement des labels géographiques dans un groupe dédié (`labelGroup`)
-- Activation/désactivation instantanée sans recalcul de la scène
-- Préparation de l’architecture pour d’autres options d’affichage (ex. grille)
+---
+
+## [0.0.2] — 2025-12-29
+
+### Ajouté
+- Option d’interface (case à cocher) pour afficher ou masquer les numéros de méridiens et parallèles
+- Paramétrisation de la taille des labels géographiques
+
+### Modifié
+- Amélioration de la lisibilité des labels latitude/longitude
+- Mise à jour du README.md
+- Ajout du fichier ROADMAP.md
+- Mise à jour du CHANGELOG.md
 
 ---
 
 ## [0.0.1] — 2025-12-29
 
-### 🎉 Première version publique
-
-#### ✨ Fonctionnalités
-- Ajout d’une scène 3D **Terre–Lune** interactive basée sur **Three.js**
-- Texture terrestre locale (equirectangulaire) avec :
-  - grille de méridiens et parallèles
-  - labels de latitude et longitude
-- Contrôles caméra complets :
-  - rotation
-  - zoom
-  - déplacement (pan)
-- Gestion du **temps et de la date** avec mise à jour dynamique de la scène
-- Rotation réaliste de la Terre basée sur le **GMST**
-- Affichage d’un fond étoilé
-
-#### 🛰️ Mode mission — Vostok 1
-- Activation du mode mission via bouton dédié
-- Positionnement initial calibré sur **Baïkonour**
-- Affichage d’un **point au sol (ground track)**
-- Trajectoire tracée dynamiquement sur le globe
-- Modèle orbital “mission-based” (calibré historiquement)
-- Gestion approximative de la phase de réentrée et de l’atterrissage (région de Saratov)
-
-#### ▶️ Lecteur de mission (Player)
-- Boutons :
-  - Play / Pause
-  - Stop
-  - Recommencer
-  - Lecture rapide (mission complète en ~10 s)
-- Navigation par **chapitres** :
-  - Décollage
-  - Mise en orbite
-  - Phase orbitale
-  - Rétrofusée
-  - Réentrée
-  - Atterrissage
-- Sous-titres contextuels selon l’étape de la mission
-
-#### 🧰 Technique
-- Architecture modulaire dans `main.js`
-- Utilisation de `satellite.js` pour le calcul du GMST
-- Textures locales (aucune dépendance CDN bloquante)
-- Compatible déploiement **GitHub Pages**
+### Ajouté
+- Première version publique de GNU Orbital Simulator
+- Scène 3D Terre–Lune interactive basée sur Three.js
+- Texture terrestre locale avec grille latitude/longitude
+- Gestion du temps et rotation terrestre réaliste (GMST)
+- Mode mission Vostok 1 :
+  - point au sol (ground track)
+  - trajectoire orbitale tracée sur le globe
+  - lecteur de mission avec chapitres
+- Support du déploiement via GitHub Pages
 
 ---
 
-## Licence
-
-Ce projet est distribué sous licence **GNU GPL v3** (ou ultérieure).
+**Auteur**  
+Steve Prud’Homme

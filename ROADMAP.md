@@ -1,8 +1,7 @@
 # Roadmap — GNU Orbital Simulator
 
 Cette feuille de route décrit l’évolution planifiée du projet **GNU Orbital Simulator**.
-Elle est basée exclusivement sur les objectifs définis par l’auteur et respecte
-strictement la numérotation **Semantic Versioning (MAJOR.MINOR.PATCH)**.
+Elle est basée sur les objectifs définis et respecte strictement la numérotation **Semantic Versioning (MAJOR.MINOR.PATCH)**.
 
 ---
 
@@ -57,6 +56,7 @@ Séparer les données de mission du moteur de simulation.
 - Déplacement de la mission **Vostok 1** dans un fichier dédié
 - Définition d’un format de données de mission structuré
 - Chargement de la mission depuis un module externe
+- **Nouvelle mission (fichier de données)** : créer `Mercury-Redstone 3` (Freedom 7) dans un fichier dédié, sans l’exposer encore dans l’UI (préparation)
 - Toujours une seule mission disponible côté utilisateur
 - Aucun changement fonctionnel visible
 
@@ -125,7 +125,7 @@ Permettre la sélection de missions via l’interface.
 - Ajout d’une liste déroulante des missions disponibles
 - Chargement dynamique des fichiers de mission
 - Adaptation du lecteur de mission aux données sélectionnées
-- Compatibilité complète avec la mission Vostok 1 existante
+- Compatibilité complète avec les missions existantes (ex. **Vostok 1** et **Mercury-Redstone 3**)
 
 ---
 
