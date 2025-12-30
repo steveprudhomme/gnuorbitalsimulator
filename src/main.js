@@ -1,12 +1,7 @@
 // src/main.js
-// Terre–Lune + grille (méridiens/parallèles numérotés) + Vostok 1 (modèle réaliste calibré mission)
-//
-// Pourquoi ce modèle ?
-// - Les TLE historiques publics pour 1961 sont difficiles à obtenir en texte (souvent derrière des images / services).
-// - Un TLE approximatif => point initial faux (comme chez toi).
-// - Ici on utilise des paramètres orbitaux publiés (inclinaison ~64.95°, période ~89.1 min, périgée/apogée ~169/315 km),
-//   et on CALIBRE l’orbite pour que la sous-satellite position à T0 corresponde à Baïkonour.
-// - Résultat: départ au bon endroit + trace plausible + arrivée près de Saratov.
+// GNU Orbital Simulator
+// Terre–Lune + grille (méridiens/parallèles) + labels numérotés (toggle + taille réglable)
+// + Vostok 1 (modèle mission calibré)
 //
 // Pré-requis (Vite):
 //   npm i three satellite.js
@@ -23,8 +18,8 @@ import * as satellite from "satellite.js";
    CONSTANTES / RÉGLAGES
 ========================================================= */
 const EARTH_RADIUS = 64;            // rayon visuel
-const EARTH_RADIUS_KM = 6378.137;   // rayon WGS84 approx (km)
-const MU_EARTH = 398600.4418;       // km^3/s^2
+const EARTH_RADIUS_KM = 6378.137;   // rayon Terre (km)
+const MU_EARTH = 398600.4418;       // km^3/s^2 (non utilisé ici mais utile plus tard)
 
 const MOON_RADIUS = 17.5;
 const MOON_DIST = 380;
@@ -37,28 +32,27 @@ const GRID_STEP_DEG = 15;
 const GRID_DRAW_STEP_DEG = 2;
 const LABEL_STEP_DEG = 30;
 
+// Labels: taille et échelle
+const LABEL_FONT_SIZE = 28; // <-- ajuste ici
+const LABEL_SCALE = 0.22;   // <-- ajuste ici
+
 // Vostok: échantillonnage de trace
-const TRACK_SAMPLE_SIM_MS = 10_000; // un point tous les 10 s simulés (assez fluide)
+const TRACK_SAMPLE_SIM_MS = 10_000; // un point tous les 10 s simulés
 
 /* =========================================================
-   DONNÉES VOSTOK 1 (paramètres orbitaux publiés)
+   DONNÉES VOSTOK 1 (paramètres orbitaux publiés — approximation)
 ========================================================= */
-// Temps (UTC)
 const VOSTOK_START_UTC = new Date(Date.UTC(1961, 3, 12, 6, 7, 0));
 const VOSTOK_END_UTC   = new Date(Date.UTC(1961, 3, 12, 7, 55, 0));
 const RETRO_UTC        = new Date(Date.UTC(1961, 3, 12, 7, 25, 0)); // approx
 
-// Lieux (approx)
-// Baïkonour (Gagarin's Start / Site 1/5)
-const BAIKONUR = { lat: 45.964, lon: 63.305 };
-// Atterrissage près de Saratov (Smelovka)
-const LANDING  = { lat: 51.27,  lon: 45.99 };
+const BAIKONUR = { lat: 45.964, lon: 63.305 }; // Kazakhstan
+const LANDING  = { lat: 51.27,  lon: 45.99  }; // près de Saratov (Smelovka)
 
-// Orbite (approx) — apogée/périgée altitude (km)
 const PERIGEE_KM = 169;
 const APOGEE_KM  = 315;
 const INCL_DEG   = 64.95;
-const PERIOD_S   = 89.1 * 60; // 89.1 min
+const PERIOD_S   = 89.1 * 60;
 
 /* =========================================================
    UI
@@ -77,9 +71,9 @@ app.innerHTML = `
   background:rgba(10,12,20,.65);
   border:1px solid rgba(255,255,255,.12);
   border-radius:12px;padding:10px 12px;
-  backdrop-filter:blur(8px);user-select:none;min-width:360px;">
+  backdrop-filter:blur(8px);user-select:none;min-width:380px;">
   <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-    <b>Terre–Lune</b>
+    <b>GNU Orbital Simulator</b>
     <button id="btnVostok" type="button"
       style="cursor:pointer;color:inherit;background:rgba(255,255,255,.08);
              border:1px solid rgba(255,255,255,.16);
@@ -100,6 +94,11 @@ app.innerHTML = `
       style="cursor:pointer;color:inherit;background:rgba(255,255,255,.08);
              border:1px solid rgba(255,255,255,.16);
              border-radius:10px;padding:6px 10px;">Clear</button>
+  </div>
+
+  <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+    <input id="toggleLabels" type="checkbox" checked>
+    <label for="toggleLabels" style="opacity:.9;">Afficher les numéros (méridiens/parallèles)</label>
   </div>
 
   <div style="margin-top:8px;font-size:12px;opacity:.85;">
@@ -153,6 +152,7 @@ const btnClear = document.getElementById("btnClear");
 const btnVostok = document.getElementById("btnVostok");
 const lineUtc = document.getElementById("lineUtc");
 const lineInfo = document.getElementById("lineInfo");
+const toggleLabels = document.getElementById("toggleLabels");
 
 const playerEl = document.getElementById("player");
 const pPlay = document.getElementById("pPlay");
@@ -215,10 +215,17 @@ function toLocalDatetimeValue(d) {
    SPRITES TEXTE
 ========================================================= */
 function createTextSprite(text, opts = {}) {
-  const { fontSize = 46, color = "#ffffff", background = "rgba(0,0,0,0.45)", padding = 10 } = opts;
+  const {
+    fontSize = 46,
+    color = "#ffffff",
+    background = "rgba(0,0,0,0.45)",
+    padding = 10,
+    scale = LABEL_SCALE,
+  } = opts;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
+
   ctx.font = `${fontSize}px system-ui`;
   const w = Math.ceil(ctx.measureText(text).width + padding * 2);
   const h = Math.ceil(fontSize + padding * 2);
@@ -238,7 +245,6 @@ function createTextSprite(text, opts = {}) {
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true });
   const sp = new THREE.Sprite(mat);
 
-  const scale = 0.32;
   sp.scale.set(w * scale, h * scale, 1);
   return sp;
 }
@@ -284,14 +290,18 @@ function buildLatLonGrid(stepDeg = GRID_STEP_DEG) {
   // Parallèles
   for (let lat = -90 + stepDeg; lat <= 90 - stepDeg; lat += stepDeg) {
     const pts = [];
-    for (let lon = -180; lon <= 180; lon += GRID_DRAW_STEP_DEG) pts.push(latLonToVector3(lat, lon, EARTH_RADIUS * 1.002));
+    for (let lon = -180; lon <= 180; lon += GRID_DRAW_STEP_DEG) {
+      pts.push(latLonToVector3(lat, lon, EARTH_RADIUS * 1.002));
+    }
     gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
   }
 
   // Méridiens
   for (let lon = -180; lon < 180; lon += stepDeg) {
     const pts = [];
-    for (let lat = -90; lat <= 90; lat += GRID_DRAW_STEP_DEG) pts.push(latLonToVector3(lat, lon, EARTH_RADIUS * 1.002));
+    for (let lat = -90; lat <= 90; lat += GRID_DRAW_STEP_DEG) {
+      pts.push(latLonToVector3(lat, lon, EARTH_RADIUS * 1.002));
+    }
     gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
   }
 }
@@ -303,21 +313,29 @@ earth.add(labelGroup);
 function rebuildLabels() {
   labelGroup.clear();
 
+  // Latitudes
   for (let lat = -60; lat <= 60; lat += LABEL_STEP_DEG) {
-    const sp = createTextSprite(`${lat > 0 ? "+" : ""}${lat}°`);
+    const sp = createTextSprite(`${lat > 0 ? "+" : ""}${lat}°`, { fontSize: LABEL_FONT_SIZE });
     sp.position.copy(latLonToVector3(lat, 0, EARTH_RADIUS * 1.06));
     labelGroup.add(sp);
   }
 
+  // Longitudes
   for (let lon = -180; lon <= 180; lon += LABEL_STEP_DEG) {
     if (lon === -180) continue;
     const hemi = lon >= 0 ? "E" : "W";
-    const sp = createTextSprite(`${Math.abs(lon)}°${hemi}`);
+    const sp = createTextSprite(`${Math.abs(lon)}°${hemi}`, { fontSize: LABEL_FONT_SIZE });
     sp.position.copy(latLonToVector3(0, lon, EARTH_RADIUS * 1.06));
     labelGroup.add(sp);
   }
 }
 rebuildLabels();
+
+// Toggle labels via checkbox
+toggleLabels.addEventListener("change", () => {
+  labelGroup.visible = toggleLabels.checked;
+});
+labelGroup.visible = toggleLabels.checked;
 
 /* =========================================================
    LUNE (illustrative)
@@ -385,20 +403,19 @@ function clearVostokGraphics() {
    ORBITE “MISSION-BASED” calibrée sur Baïkonour à T0
 ========================================================= */
 
-// Convertit sous-satellite lat/lon -> ECEF (km) (rayon Terre)
-function ecefFromLatLon(latDeg, lonDeg, rKm) {
+// Convertit sous-satellite lat/lon -> ECEF (unité sphère)
+function ecefUnitFromLatLon(latDeg, lonDeg) {
   const lat = THREE.MathUtils.degToRad(latDeg);
   const lon = THREE.MathUtils.degToRad(lonDeg);
-  const x = rKm * Math.cos(lat) * Math.cos(lon);
-  const y = rKm * Math.cos(lat) * Math.sin(lon);
-  const z = rKm * Math.sin(lat);
+  const x = Math.cos(lat) * Math.cos(lon);
+  const y = Math.cos(lat) * Math.sin(lon);
+  const z = Math.sin(lat);
   return new THREE.Vector3(x, y, z);
 }
 
-// Rotation ECEF -> ECI via GMST
+// Rotation ECEF -> ECI via GMST (convention satellite.js)
 function ecefToEci(vEcef, gmst) {
   const c = Math.cos(gmst), s = Math.sin(gmst);
-  // rotation autour de Z (convention satellite.js)
   return new THREE.Vector3(
     c * vEcef.x - s * vEcef.y,
     s * vEcef.x + c * vEcef.y,
@@ -406,55 +423,34 @@ function ecefToEci(vEcef, gmst) {
   );
 }
 
-// Calcule éléments orbitaux (a,e,n) à partir périgée/apogée
+// Paramètres ellipse
 const rp = EARTH_RADIUS_KM + PERIGEE_KM;
 const ra = EARTH_RADIUS_KM + APOGEE_KM;
-const a  = (rp + ra) / 2;
-const e  = (ra - rp) / (ra + rp);
-const n  = 2 * Math.PI / PERIOD_S; // rad/s (approx cohérent période)
-
-// Construire une orbite ECI simple:
-// - inclinaison donnée
-// - plan orbital choisi pour que la position sous-satellite à T0 corresponde à Baïkonour
-// Stratégie:
-// 1) On fixe l’ECI position direction à T0 = direction du point sous-satellite (Baïkonour) dans ECI.
-// 2) On choisit un vecteur normal de plan orbital ayant inclinaison i et “contenant” ce vecteur position.
-// 3) On propage ensuite avec un mouvement képlérien dans ce plan.
-//
-// Note: c’est une approximation (sans J2), mais très bonne pour 1 orbite.
+const a = (rp + ra) / 2;
+const e = (ra - rp) / (ra + rp);
+const n = 2 * Math.PI / PERIOD_S; // rad/s approx
 
 const incl = THREE.MathUtils.degToRad(INCL_DEG);
-let orbitBasis = null; // {p,q,w} (unit vectors) + r0mag
+let orbitBasis = null; // {p,q,w}
 
 function buildOrbitBasisAtT0() {
   const gmst0 = satellite.gstime(VOSTOK_START_UTC);
 
-  // Sous-satellite point (Baïkonour) en ECEF puis ECI
-  const rSubEcef = ecefFromLatLon(BAIKONUR.lat, BAIKONUR.lon, 1.0); // unité
+  // Sous-satellite Baïkonour en ECEF puis ECI
+  const rSubEcef = ecefUnitFromLatLon(BAIKONUR.lat, BAIKONUR.lon);
   const rSubEci = ecefToEci(rSubEcef, gmst0).normalize();
 
-  // On veut un plan orbital avec inclinaison i (angle entre normal et axe Z = i)
-  // Normal w = (sin(i)*cos(Ω), sin(i)*sin(Ω), cos(i)) pour un certain Ω (RAAN).
-  // Condition: rSubEci doit être dans le plan => w · rSubEci = 0.
-  // => sin(i)*(cosΩ*x + sinΩ*y) + cos(i)*z = 0
-  // On résout Ω via atan2.
-
+  // Trouver RAAN Ω tel que w·r=0 avec inclinaison i
   const x = rSubEci.x, y = rSubEci.y, z = rSubEci.z;
-  // cosΩ*x + sinΩ*y = -(cos(i)/sin(i))*z
   const rhs = -(Math.cos(incl) / Math.sin(incl)) * z;
 
-  // Trouver Ω tel que dot([cosΩ,sinΩ],[x,y]) = rhs
-  // On utilise la forme: A cos(Ω-φ) = rhs
   const A = Math.hypot(x, y);
   const phi = Math.atan2(y, x);
 
-  // Clamp numérique
   const u = THREE.MathUtils.clamp(rhs / (A || 1e-9), -1, 1);
   const delta = Math.acos(u);
 
-  // Deux solutions: Ω = φ ± delta. On choisit celle qui donne une orbite prograde (sens standard).
-  // (heuristique: prendre φ + delta)
-  const Omega = phi + delta;
+  const Omega = phi + delta; // choix prograde (heuristique)
 
   const w = new THREE.Vector3(
     Math.sin(incl) * Math.cos(Omega),
@@ -462,36 +458,27 @@ function buildOrbitBasisAtT0() {
     Math.cos(incl)
   ).normalize();
 
-  // Construire base du plan orbital: p (dans le plan, aligné avec rSubEci), q = w×p
   const p = rSubEci.clone().normalize();
   const q = new THREE.Vector3().crossVectors(w, p).normalize();
 
-  // Rayon orbitale instantané : on approxime en prenant r = a(1-e^2)/(1+e cosν).
-  // À T0 on ne connait pas ν, mais on peut approcher r0 ~ (rp+ra)/2 = a.
-  const r0mag = a;
-
-  orbitBasis = { p, q, w, r0mag, Omega };
+  orbitBasis = { p, q, w, Omega };
 }
 buildOrbitBasisAtT0();
 
-// Propagation képlérienne simple dans le plan (ellipse)
-// On prend ν(t)=n*t (approx 1 orbite) et r(t)=a(1-e^2)/(1+e cosν)
 function subpointLatLonFromOrbit(date) {
   const t = (date.getTime() - VOSTOK_START_UTC.getTime()) / 1000; // s
   if (t < 0) return null;
 
-  // Après la rétro, on "descend" vers le point d'atterrissage (modèle réentrée)
+  // Modèle simple de réentrée: interpolation vers LANDING après rétro
   if (date.getTime() >= RETRO_UTC.getTime()) {
     const u = (date.getTime() - RETRO_UTC.getTime()) / (VOSTOK_END_UTC.getTime() - RETRO_UTC.getTime());
     const uu = THREE.MathUtils.clamp(u, 0, 1);
 
-    // Point au moment retro (fin orbit)
     const llRetro = subpointLatLonFromOrbit(new Date(RETRO_UTC.getTime() - 1000));
     if (!llRetro) return { lat: LANDING.lat, lon: LANDING.lon };
 
-    // Interpolation “grand cercle” sur la sphère (slerp)
-    const aVec = ecefFromLatLon(llRetro.lat, llRetro.lon, 1.0).normalize();
-    const bVec = ecefFromLatLon(LANDING.lat, LANDING.lon, 1.0).normalize();
+    const aVec = ecefUnitFromLatLon(llRetro.lat, llRetro.lon).normalize();
+    const bVec = ecefUnitFromLatLon(LANDING.lat, LANDING.lon).normalize();
 
     const dot = THREE.MathUtils.clamp(aVec.dot(bVec), -1, 1);
     const ang = Math.acos(dot);
@@ -510,7 +497,7 @@ function subpointLatLonFromOrbit(date) {
     return { lat, lon };
   }
 
-  // Orbit propagation
+  // Orbit propagation (ellipse dans le plan)
   const nu = (n * t) % (2 * Math.PI);
   const r = (a * (1 - e * e)) / (1 + e * Math.cos(nu));
 
@@ -518,7 +505,7 @@ function subpointLatLonFromOrbit(date) {
   const rEci = orbitBasis.p.clone().multiplyScalar(r * Math.cos(nu))
     .add(orbitBasis.q.clone().multiplyScalar(r * Math.sin(nu)));
 
-  // Convertir ECI -> ECEF (rotation -GMST)
+  // ECI -> ECEF (rotation -GMST)
   const gmst = satellite.gstime(date);
   const c = Math.cos(-gmst), s = Math.sin(-gmst);
   const rEcef = new THREE.Vector3(
@@ -527,7 +514,6 @@ function subpointLatLonFromOrbit(date) {
     rEci.z
   );
 
-  // Sous-satellite lat/lon (sphère)
   const rr = rEcef.length();
   const lat = THREE.MathUtils.radToDeg(Math.asin(rEcef.z / rr));
   const lon = THREE.MathUtils.radToDeg(Math.atan2(rEcef.y, rEcef.x));
@@ -539,10 +525,10 @@ function subpointLatLonFromOrbit(date) {
 ========================================================= */
 const CHAPTERS = [
   { key: "launch",  label: "Décollage",     t: new Date(VOSTOK_START_UTC), subtitle: "Décollage (06:07 UTC) — Baïkonour" },
-  { key: "orbitin", label: "Mise en orbite",t: new Date(Date.UTC(1961,3,12,6,17,0)), subtitle: "Mise en orbite (≈06:17 UTC)" },
-  { key: "orbit",   label: "En orbite",     t: new Date(Date.UTC(1961,3,12,6,45,0)), subtitle: "Phase orbitale" },
+  { key: "orbitin", label: "Mise en orbite",t: new Date(Date.UTC(1961, 3, 12, 6, 17, 0)), subtitle: "Mise en orbite (≈06:17 UTC)" },
+  { key: "orbit",   label: "En orbite",     t: new Date(Date.UTC(1961, 3, 12, 6, 45, 0)), subtitle: "Phase orbitale" },
   { key: "retro",   label: "Rétrofusée",    t: new Date(RETRO_UTC), subtitle: "Rétrofusée (≈07:25 UTC)" },
-  { key: "reentry", label: "Réentrée",      t: new Date(Date.UTC(1961,3,12,7,35,0)), subtitle: "Réentrée (≈07:35 UTC)" },
+  { key: "reentry", label: "Réentrée",      t: new Date(Date.UTC(1961, 3, 12, 7, 35, 0)), subtitle: "Réentrée (≈07:35 UTC)" },
   { key: "land",    label: "Atterrissage",  t: new Date(VOSTOK_END_UTC), subtitle: "Atterrissage (≈07:55 UTC) — près de Saratov" },
 ];
 
@@ -570,7 +556,7 @@ function stopPlayback() {
 function startPlaybackNormal() {
   isPlaying = true;
   pPlay.textContent = "Pause";
-  playbackRate = 60; // 60 ms sim / ms réel => 60s sim / s réel
+  playbackRate = 60;
   lastFrameMs = null;
   speedLabel.textContent = "x60";
 }
@@ -635,11 +621,11 @@ function updateVostokAt(date, forceSample = false) {
   ensureMarker();
   marker.position.copy(p);
 
-  // échantillon trace
   if (!forceSample) {
     if (lastSampleSimMs !== null && (ms - lastSampleSimMs) < TRACK_SAMPLE_SIM_MS) return;
   }
   lastSampleSimMs = ms;
+
   trackPositions.push(p.x, p.y, p.z);
 
   if (trackLine) {
@@ -688,7 +674,6 @@ btnVostok.addEventListener("click", () => {
   buildChaptersUI();
   stopPlayback();
 
-  // RESET mission
   simTime = new Date(VOSTOK_START_UTC.getTime());
   dtInput.value = toLocalDatetimeValue(simTime);
 
@@ -697,7 +682,8 @@ btnVostok.addEventListener("click", () => {
   rebuildTrackUpTo(simTime);
   setSubtitleFromTime(simTime);
 
-  lineInfo.textContent = `Modèle mission calibré — départ Baïkonour (${BAIKONUR.lat.toFixed(3)}N, ${BAIKONUR.lon.toFixed(3)}E)`;
+  lineInfo.textContent =
+    `Labels: ${toggleLabels.checked ? "ON" : "OFF"} • Vostok calibré: Baïkonour (${BAIKONUR.lat.toFixed(3)}N, ${BAIKONUR.lon.toFixed(3)}E)`;
 });
 
 pPlay.addEventListener("click", () => {

@@ -7,6 +7,30 @@ et le projet suit une **version sémantique simplifiée** (`MAJOR.MINOR.PATCH`).
 
 ---
 
+## [0.0.2] — 2025-12-30
+
+### ✨ Améliorations
+
+#### 🧭 Grille et numérotation géographique
+- Ajout d’une **option d’interface (case à cocher)** permettant :
+  - d’**activer ou désactiver** l’affichage des numéros de méridiens et parallèles
+- Paramétrisation de la **taille des caractères** des labels :
+  - contrôle via les constantes `LABEL_FONT_SIZE` et `LABEL_SCALE`
+- Amélioration de la lisibilité générale des labels sur le globe
+
+#### 🎛️ Interface utilisateur
+- Interface rendue plus flexible pour un usage :
+  - pédagogique (labels visibles)
+  - immersif / esthétique (labels masqués)
+- Aucune régression fonctionnelle sur les modes existants
+
+#### 🧰 Technique
+- Regroupement des labels géographiques dans un groupe dédié (`labelGroup`)
+- Activation/désactivation instantanée sans recalcul de la scène
+- Préparation de l’architecture pour d’autres options d’affichage (ex. grille)
+
+---
+
 ## [0.0.1] — 2025-12-29
 
 ### 🎉 Première version publique
@@ -52,23 +76,6 @@ et le projet suit une **version sémantique simplifiée** (`MAJOR.MINOR.PATCH`).
 - Utilisation de `satellite.js` pour le calcul du GMST
 - Textures locales (aucune dépendance CDN bloquante)
 - Compatible déploiement **GitHub Pages**
-
----
-
-## À venir (Roadmap)
-
-### [0.1.0] — Prévu
-- Support des **TLE réels** (SGP4) quand disponibles
-- Sélecteur de missions multiples
-- Mode LEO / MEO / GEO générique
-- Amélioration de la Lune (éphémérides réelles)
-- Option d’affichage altitude / vitesse / période
-
-### [0.2.0] — Idées
-- Visualisation 3D de l’orbite (au-dessus de la Terre)
-- Mode inertiel (ECI) vs Terre-fixe
-- Export image / vidéo
-- Mode pédagogique (annotations interactives)
 
 ---
 

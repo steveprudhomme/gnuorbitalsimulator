@@ -1,8 +1,8 @@
-# GNU Orbital Simulator
+# GNU Orbital Simulator — v0.0.2
 
-**GNU Orbital Simulator** est une application Web (HTML5 / CSS3 / JavaScript) de simulation orbitale 3D, centrée sur une visualisation **Terre–Lune** interactive, avec une ligne du temps contrôlable (date/heure) et un **mode mission** (ex. **Vostok 1**) affichant un point au sol (ground track) et une trajectoire tracée sur le globe.
+**GNU Orbital Simulator** est une application Web (HTML5 / CSS3 / JavaScript) de simulation orbitale 3D, centrée sur une visualisation **Terre–Lune** interactive, avec une ligne du temps contrôlable (date/heure) et un **mode mission** (ex. **Vostok 1**) affichant un point au sol (*ground track*) et une trajectoire tracée sur le globe.
 
-> README inspiré par la structure et l’approche documentaire du projet “GNU Astro Galery”. :contentReference[oaicite:0]{index=0}
+> README inspiré par la structure et l’approche documentaire du projet **GNU Astro Galery**.
 
 ---
 
@@ -11,6 +11,7 @@
 - [Fonctionnalités](#fonctionnalités)
 - [Philosophie de simulation](#philosophie-de-simulation)
 - [Contrôles (caméra et temps)](#contrôles-caméra-et-temps)
+- [Grille et numérotation géographique](#grille-et-numérotation-géographique)
 - [Mode mission : Vostok 1](#mode-mission--vostok-1)
 - [Structure du projet](#structure-du-projet)
 - [Prérequis](#prérequis)
@@ -27,64 +28,108 @@
 
 ## Fonctionnalités
 
-- 🌍 **Terre 3D texturée** + grille de **méridiens/parallèles** (optionnellement numérotés)
-- 🌙 **Lune 3D** (modèle simple/illustratif — extensible vers des éphémérides)
-- 🕒 **Contrôle du temps** : la scène se met à jour quand on change la date/heure
-- 🎥 **Caméra libre** : rotation, zoom, pan
-- 🛰️ **Mode mission** : exemple **Vostok 1**
-  - point au sol affiché sur la Terre
-  - trajectoire tracée (ground track)
-  - lecteur “player” : Play / Pause / Stop / Recommencer / Play rapide + chapitres
+- 🌍 **Terre 3D texturée**
+- 🧭 **Grille de méridiens et parallèles**
+- 🔢 **Numérotation des latitudes et longitudes**
+  - taille configurable
+  - activation/désactivation via l’interface (v0.0.2)
+- 🌙 **Lune 3D** (modèle simple/illustratif — extensible)
+- 🕒 **Contrôle du temps**
+  - sélection date/heure
+  - bouton *Now*
+- 🎥 **Caméra libre**
+  - rotation
+  - zoom
+  - déplacement (pan)
+- 🛰️ **Mode mission**
+  - exemple historique : **Vostok 1**
+  - point au sol (*ground track*)
+  - trajectoire dynamique tracée sur la Terre
+  - lecteur de mission interactif
 
 ---
 
 ## Philosophie de simulation
 
-Le projet sépare clairement :
+Le projet repose sur une séparation claire des concepts :
 
-1. **Référentiel Terre** (texture + grille + labels)
-2. **Rotation terrestre réaliste** (basée sur le temps : GMST)
-3. **Éléments orbitaux / mission** (calcul de position puis projection sur la Terre)
+1. **Référentiel Terre**
+   - texture equirectangulaire
+   - grille géographique
+   - labels indépendants
+2. **Rotation terrestre réaliste**
+   - calculée à partir du temps (GMST)
+3. **Missions orbitales**
+   - calcul de position orbitale
+   - projection Terre-fixe (*ground track*)
 
-Objectif : une visualisation **compréhensible et pédagogique**, où chaque transformation (référentiel, rotation, projection) est contrôlable et débogable.
+Objectif : offrir une visualisation **pédagogique**, **débogable** et **évolutive**, sans masquer les hypothèses de modélisation.
 
 ---
 
 ## Contrôles (caméra et temps)
 
 ### Caméra (OrbitControls)
-- **Clic gauche** : tourner autour de la scène
+- **Clic gauche** : rotation
 - **Molette** : zoom
-- **Shift + drag** : pan
+- **Shift + glisser** : déplacement latéral
 
 ### Temps
-- Sélecteur **date/heure**
+- Sélecteur **date / heure**
 - Bouton **Now**
-- Mise à jour automatique de la rotation terrestre + missions actives
+- Mise à jour dynamique :
+  - rotation terrestre
+  - position des missions actives
+
+---
+
+## Grille et numérotation géographique (v0.0.2)
+
+- Affichage des **méridiens et parallèles**
+- Numérotation :
+  - latitudes (−60° à +60°)
+  - longitudes (E / W)
+- **Nouvelle option v0.0.2** :
+  - case à cocher dans l’interface pour **afficher / masquer les numéros**
+- Taille des caractères :
+  - réglable dans le code (`LABEL_FONT_SIZE`, `LABEL_SCALE`)
+
+Cette approche permet une utilisation :
+- **pédagogique** (labels visibles)
+- **immersive / esthétique** (labels masqués)
 
 ---
 
 ## Mode mission : Vostok 1
 
-Quand on clique sur **Vostok 1** :
-- Le simulateur se place sur la date de la mission (UTC)
-- Un **player** apparaît en bas de page
-- La trajectoire (ground track) se dessine sur la Terre
+Lorsque le mode **Vostok 1** est activé :
 
-### Player (bas de page)
-- **Play** : lecture temps accéléré
-- **Play rapide (10s)** : mission complète en ~10 secondes
-- **Stop** : pause immédiate
-- **Recommencer** : retour au début
-- **Chapitres** : navigation par étapes (décollage, mise en orbite, etc.)
+- Le simulateur se positionne au **début réel de la mission**
+- Un **point au sol** apparaît à la verticale du vaisseau
+- La **trajectoire orbitale** se trace progressivement sur le globe
+- Un **lecteur de mission** apparaît en bas de page
 
-> Remarque : selon la version choisie, la mission peut être basée sur un modèle “TLE/SGP4” ou un modèle “mission calibrée”.
+### Lecteur (Player)
+
+- ▶️ **Play / Pause**
+- ⏹ **Stop**
+- 🔁 **Recommencer**
+- ⚡ **Lecture rapide** (mission complète en ~10 secondes)
+- 📍 **Chapitres** :
+  - Décollage
+  - Mise en orbite
+  - Phase orbitale
+  - Rétrofusée
+  - Réentrée
+  - Atterrissage
+
+> Le modèle utilisé est un modèle *mission-based calibré* (et non un TLE historique brut).
 
 ---
 
 ## Structure du projet
 
-Exemple (Vite recommandé) :
+Structure recommandée (Vite) :
 
 ```
 GNU-orbital-simulator/
@@ -103,53 +148,62 @@ GNU-orbital-simulator/
 
 ## Prérequis
 
-- Node.js **18+** recommandé
-- Navigateur moderne (Chrome/Firefox/Edge)
+- **Node.js 18+** recommandé
+- Navigateur moderne :
+  - Chrome
+  - Firefox
+  - Edge
 
-Dépendances typiques :
-- **three**
-- **satellite.js** (si mode SGP4/TLE ou GMST)
+### Dépendances principales
+- `three`
+- `satellite.js` (GMST / bases orbitales)
 
 ---
 
 ## Installation
 
 ```bash
-git clone <ton-repo>
+git clone <url-du-repo>
 cd GNU-orbital-simulator
 npm install
 npm run dev
 ```
 
-Puis ouvre l’URL affichée (souvent `http://localhost:5173`).
+Ouvre ensuite l’URL affichée (ex. `http://localhost:5173`).
 
 ---
 
 ## Utilisation
 
-1. Lance le serveur (`npm run dev`)
-2. Ajuste la **date/heure**
-3. Clique **Vostok 1**
-4. Utilise le **player** pour visualiser la mission
+1. Lancer le serveur de développement
+2. Ajuster la **date / heure**
+3. Activer **Vostok 1**
+4. Utiliser le **lecteur** pour explorer la mission
+5. Activer/désactiver la **numérotation géographique** selon le besoin
 
 ---
 
 ## Textures
 
-Le projet utilise une texture locale (évite les problèmes de **CDN bloqué**).
+Le projet utilise volontairement des **textures locales** afin d’éviter :
+- les problèmes de CDN bloqué
+- les dépendances externes non contrôlées
 
-### Texture conseillée (simple)
-- `public/textures/earth_daymap.jpg`
+### Texture par défaut
+```
+public/textures/earth_daymap.jpg
+```
 
-Si tu changes de texture, il peut y avoir un **décalage de longitude** (offset) à régler dans le code (ex. `EARTH_TEXTURE_LON_OFFSET`).
+> Si la texture change, un ajustement du paramètre  
+> `EARTH_TEXTURE_LON_OFFSET` peut être nécessaire.
 
 ---
 
 ## Déploiement (GitHub Pages)
 
-### Option A — GitHub Pages + Vite (recommandé)
+### Option recommandée — Vite
 
-1. Configure le `base` dans `vite.config.js` (si nécessaire) :
+1. Définir la base dans `vite.config.js` :
    ```js
    export default {
      base: "/GNU-orbital-simulator/"
@@ -161,55 +215,50 @@ Si tu changes de texture, il peut y avoir un **décalage de longitude** (offset)
    npm run build
    ```
 
-3. Publie `dist/` sur GitHub Pages (branche `gh-pages` ou via Actions).
-
-### Option B — Site statique simple
-Si tu ne veux pas Vite, tu peux aussi servir le projet via un serveur local statique,
-mais attention : certains navigateurs bloquent les modules ES6 en `file://`.
+3. Publier le dossier `dist/` sur GitHub Pages.
 
 ---
 
 ## Dépannage
 
 ### Page blanche
-- Ouvre la console (F12) et vérifie les erreurs.
-- Cause fréquente : mauvaise URL de texture (`/textures/...`) ou projet non servi via serveur.
+- Vérifier la console (F12)
+- Causes fréquentes :
+  - texture manquante
+  - mauvais chemin `/textures/...`
+  - ouverture directe via `file://`
 
-### “CDN bloqué”
-- Utilise des textures **locales** dans `public/`.
-- Évite de charger three.js depuis un CDN si ton réseau le bloque.
-
-### Point Vostok pas au bon endroit
-- Vérifie :
-  - le modèle utilisé (TLE fiable ou “mission calibrée”)
-  - le réglage `EARTH_TEXTURE_LON_OFFSET`
-  - que la rotation terrestre utilise bien `GMST`
+### Position incorrecte des missions
+- Vérifier :
+  - le modèle orbital utilisé
+  - la rotation terrestre (GMST)
+  - le paramètre `EARTH_TEXTURE_LON_OFFSET`
 
 ---
 
 ## Sécurité et confidentialité
 
-- Simulation 100% locale (navigateur)
-- Aucune donnée personnelle requise
-- Aucun envoi réseau requis (si textures locales)
+- Simulation **100 % locale**
+- Aucune donnée personnelle
+- Aucun appel réseau requis
 
 ---
 
 ## Licence
 
-Code : **GNU GPLv3** (recommandée)  
-Assets (textures) : vérifier la licence de la texture utilisée.
+- Code : **GNU GPL v3**
+- Textures : selon la licence des sources utilisées
 
 ---
 
 ## Crédits
 
 - **Three.js**
-- **satellite.js** (GMST / SGP4 selon version)
-- Textures Terre : sources publiques (à créditer selon la licence)
-- Inspiration structure README : “GNU Astro Galery” :contentReference[oaicite:1]{index=1}
+- **satellite.js**
+- Textures Terre : sources publiques (NASA / Blue Marble ou équivalent)
+- Inspiration documentaire : **GNU Astro Galery**
 
 ---
 
 **Auteur**  
-Steve Prud’Homme
+Steve Prud’Homme  
